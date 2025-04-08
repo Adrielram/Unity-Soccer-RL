@@ -38,6 +38,8 @@ public class AgentSoccer : Agent
     float m_LateralSpeed;
     float m_ForwardSpeed;
 
+    // Nuevo miembro de clase, por modelo TF5
+    float m_PositionReward; 
 
     [HideInInspector]
     public Rigidbody agentRb;
@@ -154,7 +156,7 @@ public class AgentSoccer : Agent
         else if (position == Position.Striker)
         {
             // Existential penalty for Strikers
-            AddReward(-m_Existential/4);
+            AddReward(-m_Existential);
         }
         MoveAgent(actionBuffers.DiscreteActions);
     }
@@ -212,6 +214,63 @@ public class AgentSoccer : Agent
     public override void OnEpisodeBegin()
     {
         m_BallTouch = m_ResetParams.GetWithDefault("ball_touch", 0);
+        // Obtener el parámetro de recompensa por posicionamiento
+        // -----------> DESDE ESTA LINEA HASTA LA ULTIMA, SE AGREGO PARA MODELO TIMEXTENDED5
+        m_PositionReward = m_ResetParams.GetWithDefault("position_reward", 0);
+    }
+
+    // Método para evaluar y recompensar el posicionamiento estratégico
+    void RewardForPosition(Transform ball)
+    {
+        if (m_PositionReward <= 0f) return; // No recompensar si está desactivado
+        
+        if (position == Position.Goalie)
+        {
+            // Recompensar al portero por permanecer cerca de la portería
+            Vector3 ownGoalPosition = team == Team.Blue ? 
+                new Vector3(-15f, 0f, 0f) : new Vector3(15f, 0f, 0f);
+            
+            float distanceToGoal = Vector3.Distance(transform.position, ownGoalPosition);
+            // Mejor recompensa cuanto más cerca esté de la portería (hasta cierto punto)
+            if (distanceToGoal < 5f)
+            {
+                AddReward(0.01f * m_PositionReward);
+            }
+        }
+        else if (position == Position.Striker)
+        {
+            // Recompensar al delantero por posicionarse estratégicamente
+            
+            // 1. Recompensar por estar entre la pelota y la portería del oponente
+            Vector3 opponentGoalPosition = team == Team.Blue ? 
+                new Vector3(15f, 0f, 0f) : new Vector3(-15f, 0f, 0f);
+            
+            Vector3 ballToGoal = opponentGoalPosition - ball.position;
+            Vector3 agentToBall = ball.position - transform.position;
+            
+            // Angulo entre estas dos direcciones - mejor posición es estar en línea
+            float angle = Vector3.Angle(ballToGoal.normalized, -agentToBall.normalized);
+            if (angle < 45f)
+            {
+                AddReward(0.005f * m_PositionReward * (1f - angle/45f));
+            }
+            
+            // 2. Recompensar por mantener una distancia óptima a la pelota
+            float distanceToBall = Vector3.Distance(transform.position, ball.position);
+            float optimalDistance = 3f; // Distancia ideal para un pase o tiro
+            float distanceReward = Mathf.Max(0f, 1f - Mathf.Abs(distanceToBall - optimalDistance) / 2f);
+            AddReward(0.005f * m_PositionReward * distanceReward);
+        }
+    }
+
+    void FixedUpdate()
+    {
+        // Necesitarías rastrear la pelota aquí para el método RewardForPosition
+        GameObject ball = GameObject.FindGameObjectWithTag("ball");
+        if (ball != null)
+        {
+            RewardForPosition(ball.transform);
+        }
     }
 
 }

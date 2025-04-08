@@ -4,36 +4,69 @@ behaviors:
     hyperparameters:
       batch_size: 2048
       buffer_size: 20480
-      learning_rate: 0.0002
+      learning_rate: 0.0006
       beta: 0.005
       epsilon: 0.2
       lambd: 0.95
       num_epoch: 3
-      learning_rate_schedule: constant
+      learning_rate_schedule: linear
     network_settings:
+      # normalizacion con acciones discretas puede andar mal
       normalize: false
       hidden_units: 512
-      num_layers: 2
+      num_layers: 3
       vis_encode_type: simple
     reward_signals:
       extrinsic:
         gamma: 0.99
-        strength: 2.0
-      gail:
-        strength: 0.1
-        demo_path: D:\UnityProjects\Unity-Soccer-RL\Project\demos\demo_nefasta.demo
-    behavioral_cloning:
-      demo_path: D:\UnityProjects\Unity-Soccer-RL\Project\demos\demo_nefasta.demo
-      strength: 0.1
+        strength: 1.0
     keep_checkpoints: 5
-    max_steps: 100000000
+    # max_steps es del entrenamiento, no del episodio.
+    max_steps: 20000000
     time_horizon: 2000
     summary_freq: 10000
     self_play:
       save_steps: 50000
       team_change: 200000
       swap_steps: 2000
-      window: 10
+      window: 20
       play_against_latest_model_ratio: 0.5
       initial_elo: 1200.0
+
+# Modificar el curriculum de ball_touch para desincentivar progresivamente ir todos a la pelota
+environment_parameters:
+  ball_touch:
+    curriculum:
+      - name: LessonBeginnerTouch
+        completion_criteria:
+          measure: progress
+          behavior: SoccerTwos
+          signal_smoothing: true
+          min_lesson_length: 100000
+          threshold: 0.2
+        value: 2.0  # Valor reducido para evitar sobreenfatizar tocar la pelota
+      - name: LessonIntermediateTouch
+        completion_criteria:
+          measure: progress
+          behavior: SoccerTwos
+          signal_smoothing: true
+          min_lesson_length: 200000
+          threshold: 0.5
+        value: 0.5  # Reducido significativamente
+      - name: LessonAdvancedTouch
+        value: 0.1  # Recompensa mínima por tocar la pelota en etapas avanzadas
+
+  # Añadir un nuevo parámetro para recompensar el posicionamiento estratégico (TE5)
+  position_reward:
+    curriculum:
+      - name: LessonPositioning
+        completion_criteria:
+          measure: progress
+          behavior: SoccerTwos
+          signal_smoothing: true
+          min_lesson_length: 100000
+          threshold: 0.3
+        value: 0.0  # Inicialmente desactivado
+      - name: LessonPositioningAdvanced
+        value: 1.0  # Activar cuando los agentes hayan aprendido lo básico
 
