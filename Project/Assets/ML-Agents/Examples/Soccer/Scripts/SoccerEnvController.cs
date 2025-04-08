@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using Unity.MLAgents;
 using UnityEngine;
+using System.Collections;
+
 
 public class SoccerEnvController : MonoBehaviour
 {
@@ -45,6 +47,13 @@ public class SoccerEnvController : MonoBehaviour
     private SimpleMultiAgentGroup m_PurpleAgentGroup;
 
     private int m_ResetTimer;
+
+    public Renderer groundRenderer;
+    public Material blueMaterial;
+    public Material purpleMaterial;
+    public Material defaultMaterial;
+
+
 
     void Start()
     {
@@ -95,6 +104,22 @@ public class SoccerEnvController : MonoBehaviour
 
     }
 
+    private IEnumerator FlashGroundColor(Team team)
+    {
+        if (groundRenderer != null)
+        {
+            // Cambiar color segun equipo
+            groundRenderer.material = (team == Team.Blue) ? blueMaterial : purpleMaterial;
+
+            // Esperar 2 segundos (o el tiempo que quieras)
+            yield return new WaitForSeconds(2f);
+
+            // Restaurar material original
+            groundRenderer.material = defaultMaterial;
+        }
+    }
+
+
     public void GoalTouched(Team scoredTeam)
     {
         if (scoredTeam == Team.Blue)
@@ -107,6 +132,9 @@ public class SoccerEnvController : MonoBehaviour
             m_PurpleAgentGroup.AddGroupReward(1 - (float)m_ResetTimer / MaxEnvironmentSteps);
             m_BlueAgentGroup.AddGroupReward(-1);
         }
+
+        StartCoroutine(FlashGroundColor(scoredTeam));
+        
         m_PurpleAgentGroup.EndGroupEpisode();
         m_BlueAgentGroup.EndGroupEpisode();
         ResetScene();
