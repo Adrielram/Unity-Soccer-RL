@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Unity.MLAgents;
 using UnityEngine;
 using System.Collections;
+using TMPro;
 
 
 public class SoccerEnvController : MonoBehaviour
@@ -53,6 +54,9 @@ public class SoccerEnvController : MonoBehaviour
     public Material purpleMaterial;
     public Material defaultMaterial;
 
+    public TextMeshProUGUI scoreText;
+    private int blueScore = 0;
+    private int purpleScore = 0;
 
 
     void Start()
@@ -126,13 +130,17 @@ public class SoccerEnvController : MonoBehaviour
         {
             m_BlueAgentGroup.AddGroupReward(1 - (float)m_ResetTimer / MaxEnvironmentSteps);
             m_PurpleAgentGroup.AddGroupReward(-1);
+            blueScore++;
+            
         }
         else
         {
             m_PurpleAgentGroup.AddGroupReward(1 - (float)m_ResetTimer / MaxEnvironmentSteps);
             m_BlueAgentGroup.AddGroupReward(-1);
+            purpleScore++;
         }
 
+        UpdateScoreText(); // Actualizar UI
         StartCoroutine(FlashGroundColor(scoredTeam));
         
         m_PurpleAgentGroup.EndGroupEpisode();
@@ -141,6 +149,10 @@ public class SoccerEnvController : MonoBehaviour
 
     }
 
+    void UpdateScoreText()
+    {
+        scoreText.text = $"Blue: {blueScore} - Purple: {purpleScore}";
+    }
 
     public void ResetScene()
     {
