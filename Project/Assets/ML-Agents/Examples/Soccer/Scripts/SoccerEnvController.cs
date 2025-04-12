@@ -54,7 +54,7 @@ public class SoccerEnvController : MonoBehaviour
     public Material purpleMaterial;
     public Material defaultMaterial;
 
-    public TextMeshProUGUI scoreText;
+    public TextMeshPro scoreText;
     private int blueScore = 0;
     private int purpleScore = 0;
 

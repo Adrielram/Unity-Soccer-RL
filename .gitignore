@@ -83,6 +83,9 @@
 dist/
 build/
 
+#DEMOS NO
+Project/demos
+
 # Python virtual environment
 venv/
 .mypy_cache/
