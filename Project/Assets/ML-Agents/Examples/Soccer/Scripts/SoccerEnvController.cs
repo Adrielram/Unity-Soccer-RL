@@ -112,7 +112,7 @@ public class SoccerEnvController : MonoBehaviour
             groundRenderer.material = (team == Team.Blue) ? blueMaterial : purpleMaterial;
 
             // Esperar 2 segundos (o el tiempo que quieras)
-            yield return new WaitForSeconds(2f);
+            yield return new WaitForSeconds(1f);
 
             // Restaurar material original
             groundRenderer.material = defaultMaterial;
