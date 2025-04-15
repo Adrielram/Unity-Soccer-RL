@@ -1,0 +1,40 @@
+behaviors:
+  SoccerTwos:  # New behavior name for 5v5
+    trainer_type: poca
+    hyperparameters:
+      batch_size: 4096  # Increased from 2048 to handle more agents
+      buffer_size: 40960  # Increased from 20480 to handle more agents
+      learning_rate: 0.0002
+      beta: 0.005
+      epsilon: 0.2
+      lambd: 0.95
+      num_epoch: 3
+      learning_rate_schedule: constant
+    network_settings:
+      normalize: false
+      hidden_units: 768  # Increased from 512 for more complex coordination
+      num_layers: 3  # Increased from 2 for more complex coordination
+      vis_encode_type: simple
+    reward_signals:
+      extrinsic:
+        gamma: 0.99
+        strength: 2.0
+    keep_checkpoints: 5
+    max_steps: 150000000  # Increased from 100000000 to allow for longer training
+    time_horizon: 3000  # Increased from 2000 to capture longer-term dependencies
+    summary_freq: 10000
+    self_play:
+      save_steps: 50000
+      team_change: 200000
+      swap_steps: 2000
+      window: 15  # Increased from 10 to maintain more past policies
+      play_against_latest_model_ratio: 0.5
+      initial_elo: 1200.0
+environment_parameters:
+  field_scale: 1.0  # Adjust field size
+  agent_speed: 1.0  # Adjust agent movement speed
+  ball_size: 1.0    # Adjust ball size
+  max_steps: 25000  # Maximum steps per episode
+  goal_reward: 1.0  # Reward for scoring a goal
+  defense_reward: 0.1  # Reward for successful defense
+  pass_reward: 0.15  # Reward for successful passes
