@@ -31,6 +31,9 @@ behaviors:
       play_against_latest_model_ratio: 0.5
       initial_elo: 1200.0
 environment_parameters:
+  # BALL_TOUCH: 0.2 ES EL UNICO CAMBIO DE 5V5_V2 COMPARADO 5V5_V1
+  ball_touch: 0.2 # que tengan mas recompensa al tocarla, al ser cancha muy grande
+  # en C# no se utilizan:
   field_scale: 1.0  # Adjust field size
   agent_speed: 1.0  # Adjust agent movement speed
   ball_size: 1.0    # Adjust ball size
