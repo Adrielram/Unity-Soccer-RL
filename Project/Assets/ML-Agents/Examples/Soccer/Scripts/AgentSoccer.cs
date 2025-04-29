@@ -197,7 +197,7 @@ public class AgentSoccer : Agent
     void OnCollisionEnter(Collision c)
     {
         var force = k_Power * m_KickPower;
-        if (position == Position.Goalie)
+        if (position == Position.Goalie) //GOALIE PATEA MAS FUERTE
         {
             force = k_Power;
         }
