@@ -48,6 +48,16 @@ public class AgentSoccer : Agent
 
     EnvironmentParameters m_ResetParams;
 
+    // Stamina variables
+    [Header("Stamina Settings")]
+    public float maxStamina = 100f;
+    public float currentStamina;
+    public float staminaDrainRate = 5f;      // Por segundo, cuando se mueve rápido
+    public float staminaRecoveryRate = 2f;   // Por segundo, cuando se mueve poco
+    public float staminaThreshold = 20f;     // Si baja de esto, pierde velocidad
+    float staminaSpeedFactor = 1f;
+
+
     public override void Initialize()
     {
         SoccerEnvController envController = GetComponentInParent<SoccerEnvController>();
@@ -93,6 +103,7 @@ public class AgentSoccer : Agent
         agentRb.maxAngularVelocity = 500;
 
         m_ResetParams = Academy.Instance.EnvironmentParameters;
+        currentStamina = maxStamina;
     }
 
     public void MoveAgent(ActionSegment<int> act)
@@ -138,7 +149,31 @@ public class AgentSoccer : Agent
         }
 
         transform.Rotate(rotateDir, Time.deltaTime * 100f);
-        agentRb.AddForce(dirToGo * m_SoccerSettings.agentRunSpeed,
+
+        // === STAMINA LOGIC ===
+        // Detectamos si se está moviendo
+        bool isMoving = dirToGo.magnitude > 0.1f;
+        if (isMoving)
+        {
+            currentStamina -= staminaDrainRate * Time.deltaTime;
+        }
+        else
+        {
+            currentStamina += staminaRecoveryRate * Time.deltaTime;
+        }
+        // Clamp entre 0 y max
+        currentStamina = Mathf.Clamp(currentStamina, 0f, maxStamina);
+        // Si está cansado, reducir velocidad
+        if (currentStamina < staminaThreshold)
+        {
+            staminaSpeedFactor = currentStamina / staminaThreshold; // escalar entre 0 y 1
+        }
+        else
+        {
+            staminaSpeedFactor = 1f;
+        }
+        // Aplicar fuerza con penalización por cansancio
+        agentRb.AddForce(dirToGo * m_SoccerSettings.agentRunSpeed * staminaSpeedFactor,
             ForceMode.VelocityChange);
     }
 
@@ -213,6 +248,29 @@ public class AgentSoccer : Agent
     public override void OnEpisodeBegin()
     {
         m_BallTouch = m_ResetParams.GetWithDefault("ball_touch", 0);
+        currentStamina = maxStamina;
     }
 
+    public override void CollectObservations(Unity.MLAgents.Sensors.VectorSensor sensor)
+{
+    // Check if sensor is null to prevent NullReferenceException
+    if (sensor == null)
+    {
+        Debug.LogError("Vector sensor is null in CollectObservations");
+        return;
+    }
+
+    // Add normalized stamina as observation (0-1)
+    float normalizedStamina = maxStamina > 0f ? currentStamina / maxStamina : 0f;
+    sensor.AddObservation(normalizedStamina);
+    
+    // Add the stamina speed factor (only if it differs from normalized stamina)
+    sensor.AddObservation(staminaSpeedFactor);
+    
+    // You might want to add other observations like:
+    // - Position of the agent
+    // - Position of the ball
+    // - Distance to goal
+    // etc.
+}
 }
