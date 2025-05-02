@@ -1,17 +1,18 @@
+# CONFIG DE 5V5_V2
 behaviors:
   SoccerTwos:  # New behavior name for 5v5
     trainer_type: poca
     hyperparameters:
       batch_size: 4096  # Increased from 2048 to handle more agents
       buffer_size: 40960  # Increased from 20480 to handle more agents
-      learning_rate: 0.0002 # PROBAR LINEAR
+      learning_rate: 0.0002
       beta: 0.005
       epsilon: 0.2
       lambd: 0.95
       num_epoch: 3
       learning_rate_schedule: constant
     network_settings:
-      normalize: false # PROBARRR
+      normalize: false
       hidden_units: 768  # Increased from 512 for more complex coordination
       num_layers: 3  # Increased from 2 for more complex coordination
       vis_encode_type: simple
@@ -20,8 +21,8 @@ behaviors:
         gamma: 0.99
         strength: 2.0
     keep_checkpoints: 5
-    max_steps: 30000000  # Increased from 100000000 to allow for longer training
-    time_horizon: 3000  # Increased from 2000 to capture longer-term dependencies
+    max_steps: 30000000  
+    time_horizon: 3000  
     summary_freq: 10000
     self_play:
       save_steps: 50000
@@ -31,55 +32,13 @@ behaviors:
       play_against_latest_model_ratio: 0.5
       initial_elo: 1200.0
 environment_parameters:
-  ball_touch:
-    curriculum: # diferentes valores de ball_touch a lo largo del entrenamiento
-      - name: "ball_touch"
-        value: 0.02
-        completion_criteria:
-          measure: progress
-          behavior: SoccerTwos
-          signal_smoothing: true
-          min_lesson_length: 100
-          threshold: 0.166
-      - name: "ball_touch"
-        value: 0.018
-        completion_criteria:
-          measure: progress
-          behavior: SoccerTwos
-          signal_smoothing: true
-          min_lesson_length: 100
-          threshold: 0.333
-      - name: "ball_touch"
-        value: 0.016
-        completion_criteria:
-          measure: progress
-          behavior: SoccerTwos
-          signal_smoothing: true
-          min_lesson_length: 100
-          threshold: 0.5
-      - name: "ball_touch"
-        value: 0.014
-        completion_criteria:
-          measure: progress
-          behavior: SoccerTwos
-          signal_smoothing: true
-          min_lesson_length: 100
-          threshold: 0.666
-      - name: "ball_touch"
-        value: 0.012
-        completion_criteria:
-          measure: progress
-          behavior: SoccerTwos
-          signal_smoothing: true
-          min_lesson_length: 100
-          threshold: 0.833
-      - name: "ball_touch"
-        value: 0.01
+  # BALL_TOUCH: 0.2 ES EL UNICO CAMBIO DE 5V5_V2 COMPARADO 5V5_V1
+  ball_touch: 0.2 # que tengan mas recompensa al tocarla, al ser cancha muy grande
   # en C# no se utilizan:
-  #field_scale: 1.0  # Adjust field size
-  #agent_speed: 1.0  # Adjust agent movement speed
-  #ball_size: 1.0    # Adjust ball size
-  #max_steps: 25000  # Maximum steps per episode
-  #goal_reward: 1.0  # Reward for scoring a goal
-  #defense_reward: 0.1  # Reward for successful defense
-  #pass_reward: 0.15  # Reward for successful passes
+  field_scale: 1.0  # Adjust field size
+  agent_speed: 1.0  # Adjust agent movement speed
+  ball_size: 1.0    # Adjust ball size
+  max_steps: 25000  # Maximum steps per episode
+  goal_reward: 1.0  # Reward for scoring a goal
+  defense_reward: 0.1  # Reward for successful defense
+  pass_reward: 0.15  # Reward for successful passes
