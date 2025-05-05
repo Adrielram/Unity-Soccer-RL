@@ -2,6 +2,7 @@ using UnityEngine;
 using Unity.MLAgents;
 using Unity.MLAgents.Actuators;
 using Unity.MLAgents.Policies;
+using Unity.MLAgents.Sensors;
 
 public enum Team
 {
@@ -251,26 +252,15 @@ public class AgentSoccer : Agent
         currentStamina = maxStamina;
     }
 
-    public override void CollectObservations(Unity.MLAgents.Sensors.VectorSensor sensor)
-{
-    // Check if sensor is null to prevent NullReferenceException
-    if (sensor == null)
+    public override void CollectObservations(VectorSensor sensor)
     {
-        Debug.LogError("Vector sensor is null in CollectObservations");
-        return;
-    }
+        Debug.Log($"Número de observaciones antes de Stamina: {sensor.ObservationSize()}");
 
-    // Add normalized stamina as observation (0-1)
-    float normalizedStamina = maxStamina > 0f ? currentStamina / maxStamina : 0f;
-    sensor.AddObservation(normalizedStamina);
-    
-    // Add the stamina speed factor (only if it differs from normalized stamina)
-    sensor.AddObservation(staminaSpeedFactor);
-    
-    // You might want to add other observations like:
-    // - Position of the agent
-    // - Position of the ball
-    // - Distance to goal
-    // etc.
-}
+        // Añade aquí las observaciones de los componentes de sensor (si no las estás escribiendo directamente)
+
+        float normalizedStamina = maxStamina > 0f ? currentStamina / maxStamina : 0f;
+        sensor.AddObservation(normalizedStamina);
+
+        Debug.Log($"Número de observaciones después de Stamina: {sensor.ObservationSize()}");
+    }
 }
