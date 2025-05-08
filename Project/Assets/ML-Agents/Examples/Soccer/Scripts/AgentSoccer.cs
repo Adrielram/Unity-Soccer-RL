@@ -53,11 +53,35 @@ public class AgentSoccer : Agent
     [Header("Stamina Settings")]
     public float maxStamina = 100f;
     public float currentStamina;
-    public float staminaDrainRate = 5f;      // Por segundo, cuando se mueve rápido
-    public float staminaRecoveryRate = 2f;   // Por segundo, cuando se mueve poco
-    public float staminaThreshold = 20f;     // Si baja de esto, pierde velocidad
-    float staminaSpeedFactor = 1f;
-
+    [Tooltip("Cuánta stamina se pierde por segundo cuando se mueve")]
+    public float staminaDrainRate = 5f;
+    [Tooltip("Cuánta stamina se recupera por segundo cuando está quieto")]
+    public float staminaRecoveryRate = 2f;
+    
+    [Header("Stamina Performance Zones")]
+    [Tooltip("Por debajo de este valor (%), la velocidad comienza a reducirse")]
+    [Range(0f, 100f)]
+    public float fatigueThreshold = 40f;     // Umbral a partir del cual comienza la penalización (%)
+    [Tooltip("Por debajo de este valor (%), la velocidad se reduce drásticamente")]
+    [Range(0f, 50f)]
+    public float exhaustionThreshold = 15f;  // Umbral de agotamiento severo (%)
+    [Tooltip("Factor mínimo de velocidad cuando la stamina llega a cero")]
+    [Range(0f, 0.5f)]
+    public float minSpeedFactor = 0.3f;      // Velocidad mínima (30% de la normal) cuando stamina = 0
+    
+    // Variables internas
+    private float staminaSpeedFactor = 1f;
+    private float fatiguedThresholdValue;    // Valor absoluto calculado desde el porcentaje
+    private float exhaustedThresholdValue;   // Valor absoluto calculado desde el porcentaje
+    
+    // Debug variables
+    [Header("Debug Settings")]
+    public bool debugStamina = false;       // Activar/desactivar depuración
+    public float debugInterval = 1.0f;      // Intervalo en segundos para mostrar debug
+    private float debugTimer = 0f;          // Contador para controlar el intervalo
+    private Vector3 lastPosition;           // Posición anterior para calcular velocidad real
+    private float currentSpeed = 0f;        // Velocidad actual del agente
+    private Vector3 dirToGoDebug = Vector3.zero; // Guardamos dirección para debug
 
     public override void Initialize()
     {
@@ -105,6 +129,10 @@ public class AgentSoccer : Agent
 
         m_ResetParams = Academy.Instance.EnvironmentParameters;
         currentStamina = maxStamina;
+
+        // Calcular valores absolutos para los umbrales de rendimiento
+        fatiguedThresholdValue = maxStamina * (fatigueThreshold / 100f);
+        exhaustedThresholdValue = maxStamina * (exhaustionThreshold / 100f);
     }
 
     public void MoveAgent(ActionSegment<int> act)
@@ -154,25 +182,46 @@ public class AgentSoccer : Agent
         // === STAMINA LOGIC ===
         // Detectamos si se está moviendo
         bool isMoving = dirToGo.magnitude > 0.1f;
+        // Guardar dirección para debug
+        dirToGoDebug = dirToGo;
+        
         if (isMoving)
         {
-            currentStamina -= staminaDrainRate * Time.deltaTime;
+            // Consumo basado en intensidad del movimiento
+            float movementIntensity = Mathf.Clamp01(dirToGo.magnitude);
+            currentStamina -= staminaDrainRate * movementIntensity * Time.deltaTime;
         }
         else
         {
             currentStamina += staminaRecoveryRate * Time.deltaTime;
         }
+        
         // Clamp entre 0 y max
         currentStamina = Mathf.Clamp(currentStamina, 0f, maxStamina);
-        // Si está cansado, reducir velocidad
-        if (currentStamina < staminaThreshold)
+        
+        // Sistema de zonas de rendimiento
+        if (currentStamina < exhaustedThresholdValue)
         {
-            staminaSpeedFactor = currentStamina / staminaThreshold; // escalar entre 0 y 1
+            // Zona de agotamiento (por debajo del umbral de agotamiento)
+            // Velocidad reducida a minSpeedFactor cuando stamina = 0,
+            // y aumenta linealmente hasta llegar al umbral de agotamiento
+            float normalizedStamina = currentStamina / exhaustedThresholdValue;
+            staminaSpeedFactor = Mathf.Lerp(minSpeedFactor, 0.7f, normalizedStamina);
+        }
+        else if (currentStamina < fatiguedThresholdValue)
+        {
+            // Zona de fatiga (entre el umbral de agotamiento y el de fatiga)
+            // Velocidad reducida entre 0.7 y 1.0 proporcionalmente 
+            float normalizedStamina = (currentStamina - exhaustedThresholdValue) / 
+                                      (fatiguedThresholdValue - exhaustedThresholdValue);
+            staminaSpeedFactor = Mathf.Lerp(0.7f, 1.0f, normalizedStamina);
         }
         else
         {
+            // Zona óptima (por encima del umbral de fatiga)
             staminaSpeedFactor = 1f;
         }
+        
         // Aplicar fuerza con penalización por cansancio
         agentRb.AddForce(dirToGo * m_SoccerSettings.agentRunSpeed * staminaSpeedFactor,
             ForceMode.VelocityChange);
@@ -250,17 +299,43 @@ public class AgentSoccer : Agent
     {
         m_BallTouch = m_ResetParams.GetWithDefault("ball_touch", 0);
         currentStamina = maxStamina;
+        lastPosition = transform.position;
+        debugTimer = 0f;
+    }
+
+    private void Update()
+    {
+        // Calcular velocidad actual basada en la magnitud de la velocidad real del Rigidbody
+        currentSpeed = agentRb.linearVelocity.magnitude;
+        
+        // Debug de stamina si está activado
+        if (debugStamina)
+        {
+            debugTimer += Time.deltaTime;
+            if (debugTimer >= debugInterval)
+            {
+                string teamStr = (team == Team.Blue) ? "Azul" : "Púrpura";
+                string posStr = position.ToString();
+                
+                // Añadir más información para debug
+                Vector3 velocity = agentRb.linearVelocity;
+                bool isMoving = dirToGoDebug.magnitude > 0.1f; // Referencia a la variable usada en MoveAgent
+                
+                Debug.Log($"[{teamStr}][{posStr}] Stamina: {currentStamina:F1}/{maxStamina} " +
+                          $"Factor: {staminaSpeedFactor:F2} " +
+                          $"Velocidad: {currentSpeed:F2} u/s " +
+                          $"isMoving: {isMoving} " +
+                          $"Zonas: F={fatiguedThresholdValue:F1}/E={exhaustedThresholdValue:F1} " +
+                          $"Vel.Raw: ({velocity.x:F2}, {velocity.y:F2}, {velocity.z:F2})");
+                
+                debugTimer = 0f;
+            }
+        }
     }
 
     public override void CollectObservations(VectorSensor sensor)
     {
-        Debug.Log($"Número de observaciones antes de Stamina: {sensor.ObservationSize()}");
-
-        // Añade aquí las observaciones de los componentes de sensor (si no las estás escribiendo directamente)
-
         float normalizedStamina = maxStamina > 0f ? currentStamina / maxStamina : 0f;
         sensor.AddObservation(normalizedStamina);
-
-        Debug.Log($"Número de observaciones después de Stamina: {sensor.ObservationSize()}");
     }
 }
