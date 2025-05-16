@@ -235,7 +235,15 @@ public class AgentSoccer : Agent
             AddReward(-m_Existential);
             // probar restar penalizacion
         }
-        MoveAgent(actionBuffers.DiscreteActions);
+        MoveAgent(actionBuffers.DiscreteActions); // MoveAgent actualiza currentStamina y staminaSpeedFactor
+
+        // --- Penalización por Agotamiento de Stamina ---
+        // Se aplica después de que MoveAgent haya actualizado la stamina.
+        // Usamos un valor ligeramente superior a 0 para la comparación para capturar casos de flotantes muy pequeños.
+        if (currentStamina <= 0.01f) 
+        {
+            AddReward(-0.001f); // Penalización por estar exhausto. Ajusta este valor según sea necesario.
+        }
     }
 
     public override void Heuristic(in ActionBuffers actionsOut)
