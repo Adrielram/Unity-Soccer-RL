@@ -2,6 +2,7 @@ using UnityEngine;
 using Unity.MLAgents;
 using Unity.MLAgents.Actuators;
 using Unity.MLAgents.Policies;
+using Unity.MLAgents.Sensors;
 
 public enum Team
 {
@@ -52,10 +53,11 @@ public class AgentSoccer : Agent
     [Header("Stamina Settings")]
     public float maxStamina = 100f;
     public float currentStamina;
-    public float staminaDrainRate = 5f;      // Por segundo, cuando se mueve rápido
+    public float staminaDrainRate = 10f;      // Por segundo, cuando se mueve rápido
     public float staminaRecoveryRate = 2f;   // Por segundo, cuando se mueve poco
     public float staminaThreshold = 20f;     // Si baja de esto, pierde velocidad
-    float staminaSpeedFactor = 1f;
+    public float minSpeedFactorWhenExhausted = 0.5f; // Velocidad mínima cuando la stamina es 0 
+    public float staminaSpeedFactor = 1f;
 
 
     public override void Initialize()
@@ -151,27 +153,68 @@ public class AgentSoccer : Agent
         transform.Rotate(rotateDir, Time.deltaTime * 100f);
 
         // === STAMINA LOGIC ===
-        // Detectamos si se está moviendo
-        bool isMoving = dirToGo.magnitude > 0.1f;
-        if (isMoving)
+        bool isTryingToMove = dirToGo.magnitude > 0.1f;
+
+        // Primero, calculamos el staminaSpeedFactor potencial BASADO EN LA STAMINA ACTUAL (antes de gastar/recuperar).
+        // Esto nos dice a qué velocidad el agente INTENTARÍA moverse si la stamina no cambiara este frame.
+        float potentialSpeedFactor;
+        if (currentStamina < staminaThreshold)
         {
-            currentStamina -= staminaDrainRate * Time.deltaTime;
+            float staminaRatio = (staminaThreshold > 0) ? Mathf.Clamp01(currentStamina / staminaThreshold) : 0f;
+            potentialSpeedFactor = minSpeedFactorWhenExhausted + staminaRatio * (1f - minSpeedFactorWhenExhausted);
         }
         else
         {
+            potentialSpeedFactor = 1f;
+        }
+        if (currentStamina <= 0f) // Asegurar que el factor potencial no sea menor que el mínimo
+        {
+            potentialSpeedFactor = minSpeedFactorWhenExhausted;
+        }
+
+
+        // Ahora, decidimos si gastar o recuperar stamina.
+        if (isTryingToMove)
+        {
+            // Si el agente intenta moverse Y su velocidad potencial es MAYOR que la mínima, gasta stamina.
+            if (potentialSpeedFactor > minSpeedFactorWhenExhausted)
+            {
+                currentStamina -= staminaDrainRate * Time.deltaTime;
+            }
+            // Si intenta moverse pero su velocidad potencial ES la mínima (o menos, aunque no debería ser menos), recupera.
+            else // potentialSpeedFactor <= minSpeedFactorWhenExhausted
+            {
+                currentStamina += staminaRecoveryRate * Time.deltaTime;
+            }
+        }
+        else // No está intentando moverse
+        {
             currentStamina += staminaRecoveryRate * Time.deltaTime;
         }
-        // Clamp entre 0 y max
+
         currentStamina = Mathf.Clamp(currentStamina, 0f, maxStamina);
-        // Si está cansado, reducir velocidad
+        
+        // --- Calcular y actualizar el staminaSpeedFactor FINAL para ESTE frame ---
+        // Basado en la currentStamina recién actualizada (después de gastar/recuperar).
         if (currentStamina < staminaThreshold)
         {
-            staminaSpeedFactor = currentStamina / staminaThreshold; // escalar entre 0 y 1
+            float staminaRatio = (staminaThreshold > 0) ? Mathf.Clamp01(currentStamina / staminaThreshold) : 0f;
+            staminaSpeedFactor = minSpeedFactorWhenExhausted + staminaRatio * (1f - minSpeedFactorWhenExhausted);
         }
         else
         {
             staminaSpeedFactor = 1f;
         }
+        
+        // Asegurarse de que el factor no sea menor que el mínimo si la stamina es 0.
+        // Esta es una salvaguarda importante y donde se aplica la velocidad mínima.
+        if (currentStamina <= 0f)
+        {
+            staminaSpeedFactor = minSpeedFactorWhenExhausted;
+            // La línea "AddReward(-0.001f);" que estaba aquí debe moverse a OnActionReceived
+            // si deseas penalizar el agotamiento. MoveAgent no debería manejar recompensas directamente.
+        }
+
         // Aplicar fuerza con penalización por cansancio
         agentRb.AddForce(dirToGo * m_SoccerSettings.agentRunSpeed * staminaSpeedFactor,
             ForceMode.VelocityChange);
@@ -251,26 +294,9 @@ public class AgentSoccer : Agent
         currentStamina = maxStamina;
     }
 
-    public override void CollectObservations(Unity.MLAgents.Sensors.VectorSensor sensor)
-{
-    // Check if sensor is null to prevent NullReferenceException
-    if (sensor == null)
-    {
-        Debug.LogError("Vector sensor is null in CollectObservations");
-        return;
-    }
-
-    // Add normalized stamina as observation (0-1)
-    float normalizedStamina = maxStamina > 0f ? currentStamina / maxStamina : 0f;
-    sensor.AddObservation(normalizedStamina);
-    
-    // Add the stamina speed factor (only if it differs from normalized stamina)
-    sensor.AddObservation(staminaSpeedFactor);
-    
-    // You might want to add other observations like:
-    // - Position of the agent
-    // - Position of the ball
-    // - Distance to goal
-    // etc.
-}
+    public override void CollectObservations(VectorSensor sensor)
+        {
+            float normalizedStamina = maxStamina > 0f ? currentStamina / maxStamina : 0f;
+            sensor.AddObservation(normalizedStamina);
+        }
 }
