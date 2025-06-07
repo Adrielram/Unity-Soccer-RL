@@ -3,7 +3,7 @@ behaviors:
     trainer_type: poca
     hyperparameters:
       batch_size: 4096  # Increased from 2048 to handle more agents
-      buffer_size: 40960  # Increased from 20480 to handle more agents
+      buffer_size: 81920  # Increased from 20480 to handle more agents
       learning_rate: 0.0002
       beta: 0.005
       epsilon: 0.2
@@ -15,6 +15,12 @@ behaviors:
       hidden_units: 768  # Increased from 512 for more complex coordination
       num_layers: 3  # Increased from 2 for more complex coordination
       vis_encode_type: simple
+      #memory:
+        #sequence_length: 64  # for longer sequences # stamina_mem_1.onnx
+        #memory_size: 256  # for more complex coordination #stamina_mem_1.onnx
+        # nuevos valores porque no juegan muy bien:
+        #sequence_length: 16  # Reduced for faster convergence
+        #memory_size: 64  # Reduced for faster convergence
     reward_signals:
       extrinsic:
         gamma: 0.99
