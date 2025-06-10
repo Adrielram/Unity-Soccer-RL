@@ -174,4 +174,7 @@ public class SoccerEnvController : MonoBehaviour
         //Reset Ball
         ResetBall();
     }
+
+    public SimpleMultiAgentGroup BlueAgentGroup => m_BlueAgentGroup;
+    public SimpleMultiAgentGroup PurpleAgentGroup => m_PurpleAgentGroup;
 }

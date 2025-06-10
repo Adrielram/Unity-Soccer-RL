@@ -289,7 +289,24 @@ public class AgentSoccer : Agent
         }
         if (c.gameObject.CompareTag("ball"))
         {
-            AddReward(.2f * m_BallTouch);
+            // Use group reward instead of individual reward
+            var envController = GetComponentInParent<SoccerEnvController>();
+            if (envController != null)
+            {
+                if (team == Team.Blue)
+                {
+                    envController.BlueAgentGroup.AddGroupReward(.2f * m_BallTouch);
+                }
+                else
+                {
+                    envController.PurpleAgentGroup.AddGroupReward(.2f * m_BallTouch);
+                }
+            }
+            else
+            {
+                // fallback to individual reward if envController not found
+                AddReward(.2f * m_BallTouch);
+            }
             var dir = c.contacts[0].point - transform.position;
             dir = dir.normalized;
             c.gameObject.GetComponent<Rigidbody>().AddForce(dir * force);
