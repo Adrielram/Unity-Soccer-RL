@@ -88,7 +88,7 @@ public class AgentSoccer : Agent
             m_LateralSpeed = 0.3f;
             m_ForwardSpeed = 1.0f;
         }
-        m_SoccerSettings = FindObjectOfType<SoccerSettings>();
+        m_SoccerSettings = FindFirstObjectByType<SoccerSettings>();
         agentRb = GetComponent<Rigidbody>();
         agentRb.maxAngularVelocity = 500;
 
@@ -154,7 +154,7 @@ public class AgentSoccer : Agent
         else if (position == Position.Striker)
         {
             // Existential penalty for Strikers
-            AddReward(-m_Existential/4);
+            AddReward(-m_Existential);
         }
         MoveAgent(actionBuffers.DiscreteActions);
     }

@@ -19,12 +19,12 @@ behaviors:
       extrinsic:
         gamma: 0.99
         strength: 2.0
-      gail:
-        strength: 0.1
-        demo_path: D:\UnityProjects\Unity-Soccer-RL\Project\demos\demo_nefasta.demo
-    behavioral_cloning:
-      demo_path: D:\UnityProjects\Unity-Soccer-RL\Project\demos\demo_nefasta.demo
-      strength: 0.1
+      #gail:
+      #  strength: 0.1
+      #  demo_path: D:\UnityProjects\Unity-Soccer-RL\Project\demos\demo_nefasta.demo
+    #behavioral_cloning:
+      #demo_path: D:\UnityProjects\Unity-Soccer-RL\Project\demos\demo_nefasta.demo
+      #strength: 0.1
     keep_checkpoints: 5
     max_steps: 100000000
     time_horizon: 2000
