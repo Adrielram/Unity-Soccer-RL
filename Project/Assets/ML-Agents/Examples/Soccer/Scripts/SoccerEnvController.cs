@@ -40,11 +40,15 @@ public class SoccerEnvController : MonoBehaviour
 
     private SoccerSettings m_SoccerSettings;
 
+    // Add references to goals for reward calculation
+    public GameObject blueGoal;
+    public GameObject purpleGoal;
 
     private SimpleMultiAgentGroup m_BlueAgentGroup;
     private SimpleMultiAgentGroup m_PurpleAgentGroup;
 
     private int m_ResetTimer;
+    private const float AUTOGOAL_PENALTY_GROUP = -1.0f; // Group penalty for autogoal
 
     void Start()
     {
@@ -97,15 +101,41 @@ public class SoccerEnvController : MonoBehaviour
 
     public void GoalTouched(Team scoredTeam)
     {
-        if (scoredTeam == Team.Blue)
+        AgentSoccer lastAgentToTouch = AgentSoccer.lastTouchedBallAgent;
+
+        if (scoredTeam == Team.Blue) // Blue scored on Purple goal
         {
-            m_BlueAgentGroup.AddGroupReward(1 - (float)m_ResetTimer / MaxEnvironmentSteps);
-            m_PurpleAgentGroup.AddGroupReward(-1);
+            // Check for autogoal by Purple team
+            if (lastAgentToTouch != null && lastAgentToTouch.team == Team.Purple)
+            {
+                m_PurpleAgentGroup.AddGroupReward(AUTOGOAL_PENALTY_GROUP); // Penalize Purple team for autogoal
+                lastAgentToTouch.AddReward(AgentSoccer.AUTOGOAL_PENALTY_AGENT); // Penalize the specific agent
+                Debug.Log("Autogoal by Purple Player: " + lastAgentToTouch.name);
+                // Blue still gets standard goal reward
+                m_BlueAgentGroup.AddGroupReward(1 - (float)m_ResetTimer / MaxEnvironmentSteps);
+            }
+            else
+            {
+                m_BlueAgentGroup.AddGroupReward(1 - (float)m_ResetTimer / MaxEnvironmentSteps);
+                m_PurpleAgentGroup.AddGroupReward(-1); // Standard penalty for conceded goal
+            }
         }
-        else
+        else // Purple scored on Blue goal
         {
-            m_PurpleAgentGroup.AddGroupReward(1 - (float)m_ResetTimer / MaxEnvironmentSteps);
-            m_BlueAgentGroup.AddGroupReward(-1);
+            // Check for autogoal by Blue team
+            if (lastAgentToTouch != null && lastAgentToTouch.team == Team.Blue)
+            {
+                m_BlueAgentGroup.AddGroupReward(AUTOGOAL_PENALTY_GROUP); // Penalize Blue team for autogoal
+                lastAgentToTouch.AddReward(AgentSoccer.AUTOGOAL_PENALTY_AGENT); // Penalize the specific agent
+                Debug.Log("Autogoal by Blue Player: " + lastAgentToTouch.name);
+                // Purple still gets standard goal reward
+                m_PurpleAgentGroup.AddGroupReward(1 - (float)m_ResetTimer / MaxEnvironmentSteps);
+            }
+            else
+            {
+                m_PurpleAgentGroup.AddGroupReward(1 - (float)m_ResetTimer / MaxEnvironmentSteps);
+                m_BlueAgentGroup.AddGroupReward(-1); // Standard penalty for conceded goal
+            }
         }
         m_PurpleAgentGroup.EndGroupEpisode();
         m_BlueAgentGroup.EndGroupEpisode();
