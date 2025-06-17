@@ -1,0 +1,39 @@
+[33mcommit 262487e205e51086d7a0b352e15e70202006529c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mdevelop_5v5[m[33m)[m
+Author: Adrielram <aferrero@alumnos.exa.unicen.edu.ar>
+Date:   Fri Jun 13 16:59:50 2025 -0300
+
+    nuevos modelos poca_small y ppo
+
+Project/Assets/ML-Agents/Examples/Soccer/Scripts/AgentSoccer.cs
+Project/Assets/ML-Agents/Examples/Soccer/Scripts/SoccerEnvController.cs
+Project/Assets/ML-Agents/Examples/Soccer/TFModels/ppo1_15MSTEPS.onnx
+Project/Assets/ML-Agents/Examples/Soccer/TFModels/ppo1_15MSTEPS.onnx.meta
+Project/Assets/ML-Agents/Examples/Soccer/TFModels/ppo1_20MSTEPS.onnx
+Project/Assets/ML-Agents/Examples/Soccer/TFModels/ppo1_20MSTEPS.onnx.meta
+Project/Assets/ML-Agents/Examples/Soccer/TFModels/ppo1_60MSTEPS.onnx
+Project/Assets/ML-Agents/Examples/Soccer/TFModels/ppo1_60MSTEPS.onnx.meta
+Project/demos/aguspegay.demo
+Project/demos/aguspegay_0.demo
+Project/demos/aguspegay_1.demo
+Project/demos/aguspegay_10.demo
+Project/demos/aguspegay_11.demo
+Project/demos/aguspegay_12.demo
+Project/demos/aguspegay_13.demo
+Project/demos/aguspegay_14.demo
+Project/demos/aguspegay_15.demo
+Project/demos/aguspegay_2.demo
+Project/demos/aguspegay_3.demo
+Project/demos/aguspegay_4.demo
+Project/demos/aguspegay_5.demo
+Project/demos/aguspegay_6.demo
+Project/demos/aguspegay_7.demo
+Project/demos/aguspegay_8.demo
+Project/demos/aguspegay_9.demo
+Project/demos/demo_nefasta.demo
+Project/demos/te3demo.demo
+Project/demos/te3demo_0.demo
+Project/demos/te3demo_1.demo
+Project/demos/te3demo_2.demo
+Project/demos/te3demo_3.demo
+com.unity.ml-agents/Runtime/Actuators/ActionSegment.cs
+config/ppo/SoccerTwos.yaml

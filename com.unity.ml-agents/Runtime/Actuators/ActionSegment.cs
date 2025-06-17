@@ -104,6 +104,8 @@ namespace Unity.MLAgents.Actuators
         /// </summary>
         public void Clear()
         {
+            // Array property is guaranteed non-null by the constructor (it's System.Array.Empty<T>() if input is null).
+            // Clears the segment of the backing array defined by Offset and Length.
             System.Array.Clear(Array, Offset, Length);
         }
 
