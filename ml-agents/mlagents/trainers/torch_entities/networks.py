@@ -298,7 +298,15 @@ class MultiAgentNetworkBody(torch.nn.Module):
             q_ent_size, None, attention_embeding_size
         )
 
-        self.self_attn = ResidualSelfAttention(attention_embeding_size)
+        num_attention_heads = getattr(network_settings, "num_attention_heads", 1)
+        num_attention_layers = getattr(network_settings, "num_attention_layers", 1)
+        self.self_attn_layers = nn.ModuleList()
+        for _ in range(num_attention_layers):
+            self.self_attn_layers.append(
+                ResidualSelfAttention(
+                    attention_embeding_size, self.h_size, num_attention_heads
+                )
+            )
 
         self.linear_encoder = LinearEncoder(
             attention_embeding_size,
@@ -404,7 +412,9 @@ class MultiAgentNetworkBody(torch.nn.Module):
             self_attn_inputs.append(self.obs_encoder(None, g_inp))
 
         encoded_entity = torch.cat(self_attn_inputs, dim=1)
-        encoded_state = self.self_attn(encoded_entity, self_attn_masks)
+        encoded_state = encoded_entity
+        for layer in self.self_attn_layers:
+            encoded_state = layer(encoded_state, self_attn_masks)
 
         flipped_masks = 1 - torch.cat(self_attn_masks, dim=1)
         num_agents = torch.sum(flipped_masks, dim=1, keepdim=True)

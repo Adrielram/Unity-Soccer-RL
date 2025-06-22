@@ -176,6 +176,9 @@ class ResidualSelfAttention(torch.nn.Module):
     Residual self attentioninspired from https://arxiv.org/pdf/1909.07528.pdf. Can be used
     with an EntityEmbedding module, to apply multi head self attention to encode information
     about a "Self" and a list of relevant "Entities".
+    The architecture is composed of a Multi-Head Attention layer, followed by a
+    feed-forward layer. The input is passed to both of these layers as a residual
+    connection.
     """
 
     EPSILON = 1e-7
