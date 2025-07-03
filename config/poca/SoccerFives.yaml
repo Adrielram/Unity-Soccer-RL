@@ -2,8 +2,8 @@ behaviors:
   SoccerTwos:  # New behavior name for 5v5
     trainer_type: poca
     hyperparameters:
-      batch_size: 4096  # Increased from 2048 to handle more agents
-      buffer_size: 40960  # Increased from 20480 to handle more agents
+      batch_size: 8192  # Increased from 2048 to handle more agents
+      buffer_size: 81920  # Increased from 20480 to handle more agents
       learning_rate: 0.0002
       beta: 0.005
       epsilon: 0.2
@@ -15,12 +15,20 @@ behaviors:
       hidden_units: 768  # Increased from 512 for more complex coordination
       num_layers: 3  # Increased from 2 for more complex coordination
       vis_encode_type: simple
+      #memory:
+        #sequence_length: 64  # for longer sequences # stamina_mem_1.onnx
+        #memory_size: 256  # for more complex coordination #stamina_mem_1.onnx
+        # nuevos valores porque no juegan muy bien:
+        #sequence_length: 16  # Reduced for faster convergence
+        #memory_size: 64  # Reduced for faster convergence
     reward_signals:
       extrinsic:
         gamma: 0.99
         strength: 2.0
     keep_checkpoints: 5
-    max_steps: 150000000  # Increased from 100000000 to allow for longer training
+    max_steps: 100000000  # Increased from 100000000 to allow for longer training
+    # MAX_STEPS BAJO A 30M. ESTABA EN 150M. HAY PARAMETROS QUE CAMBIAN DEPENDIENDO DE ESTO....
+    # ENTENDER COMO PUEDE HABER AFECTADO AL ENTRENAMIENTO
     time_horizon: 3000  # Increased from 2000 to capture longer-term dependencies
     summary_freq: 10000
     self_play:
@@ -31,8 +39,51 @@ behaviors:
       play_against_latest_model_ratio: 0.5
       initial_elo: 1200.0
 environment_parameters:
-  # BALL_TOUCH: 0.2 ES EL UNICO CAMBIO DE 5V5_V2 COMPARADO 5V5_V1
-  ball_touch: 0.2 # que tengan mas recompensa al tocarla, al ser cancha muy grande
+  ball_touch:
+    curriculum:
+      - name: ball_touch_1
+        completion_criteria:
+          measure: progress
+          behavior: SoccerTwos
+          signal_smoothing: false
+          min_lesson_length: 0
+          threshold: 0.06    
+        value: 0.5
+      - name: ball_touch_2
+        completion_criteria:
+          measure: progress
+          behavior: SoccerTwos
+          signal_smoothing: false
+          min_lesson_length: 0
+          threshold: 0.12    
+        value: 0.4
+      - name: ball_touch_3
+        completion_criteria:
+          measure: progress
+          behavior: SoccerTwos
+          signal_smoothing: false
+          min_lesson_length: 0
+          threshold: 0.18
+        value: 0.3
+      - name: ball_touch_4
+        completion_criteria:
+          measure: progress
+          behavior: SoccerTwos
+          signal_smoothing: false
+          min_lesson_length: 0
+          threshold: 0.24
+        value: 0.2
+      - name: ball_touch_5
+        completion_criteria:
+          measure: progress
+          behavior: SoccerTwos
+          signal_smoothing: false
+          min_lesson_length: 0
+          threshold: 0.3
+        value: 0.1
+      - name: ball_touch_6
+        # Esta lección se activa a partir de 20 M + epsilon
+        value: 0.0
   # en C# no se utilizan:
   field_scale: 1.0  # Adjust field size
   agent_speed: 1.0  # Adjust agent movement speed
