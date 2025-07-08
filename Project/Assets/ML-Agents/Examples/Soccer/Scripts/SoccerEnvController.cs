@@ -40,11 +40,15 @@ public class SoccerEnvController : MonoBehaviour
 
     private SoccerSettings m_SoccerSettings;
 
+    // Add references to goals for reward calculation
+    public GameObject blueGoal;
+    public GameObject purpleGoal;
 
     private SimpleMultiAgentGroup m_BlueAgentGroup;
     private SimpleMultiAgentGroup m_PurpleAgentGroup;
 
     private int m_ResetTimer;
+    private const float AUTOGOAL_PENALTY_GROUP = -1.0f; // Group penalty for autogoal
 
     void Start()
     {
@@ -57,9 +61,22 @@ public class SoccerEnvController : MonoBehaviour
         m_BallStartingPos = new Vector3(ball.transform.position.x, ball.transform.position.y, ball.transform.position.z);
         foreach (var item in AgentsList)
         {
+            if (item == null || item.Agent == null)
+            {
+                Debug.LogError("SoccerEnvController: Found null item or agent in AgentsList during initialization.");
+                continue;
+            }
+
             item.StartingPos = item.Agent.transform.position;
             item.StartingRot = item.Agent.transform.rotation;
             item.Rb = item.Agent.GetComponent<Rigidbody>();
+            
+            if (item.Rb == null)
+            {
+                Debug.LogError($"SoccerEnvController: Agent {item.Agent.name} is missing a Rigidbody component.");
+                continue;
+            }
+
             if (item.Agent.team == Team.Blue)
             {
                 m_BlueAgentGroup.RegisterAgent(item.Agent);
@@ -97,15 +114,41 @@ public class SoccerEnvController : MonoBehaviour
 
     public void GoalTouched(Team scoredTeam)
     {
-        if (scoredTeam == Team.Blue)
+        AgentSoccer lastAgentToTouch = AgentSoccer.lastTouchedBallAgent;
+
+        if (scoredTeam == Team.Blue) // Blue scored on Purple goal
         {
-            m_BlueAgentGroup.AddGroupReward(1 - (float)m_ResetTimer / MaxEnvironmentSteps);
-            m_PurpleAgentGroup.AddGroupReward(-1);
+            // Check for autogoal by Purple team
+            if (lastAgentToTouch != null && lastAgentToTouch.team == Team.Purple)
+            {
+                m_PurpleAgentGroup.AddGroupReward(AUTOGOAL_PENALTY_GROUP); // Penalize Purple team for autogoal
+                lastAgentToTouch.AddReward(AgentSoccer.AUTOGOAL_PENALTY_AGENT); // Penalize the specific agent
+                Debug.Log("Autogoal by Purple Player: " + lastAgentToTouch.name);
+                // Blue still gets standard goal reward
+                m_BlueAgentGroup.AddGroupReward(1 - (float)m_ResetTimer / MaxEnvironmentSteps);
+            }
+            else
+            {
+                m_BlueAgentGroup.AddGroupReward(1 - (float)m_ResetTimer / MaxEnvironmentSteps);
+                m_PurpleAgentGroup.AddGroupReward(-1); // Standard penalty for conceded goal
+            }
         }
-        else
+        else // Purple scored on Blue goal
         {
-            m_PurpleAgentGroup.AddGroupReward(1 - (float)m_ResetTimer / MaxEnvironmentSteps);
-            m_BlueAgentGroup.AddGroupReward(-1);
+            // Check for autogoal by Blue team
+            if (lastAgentToTouch != null && lastAgentToTouch.team == Team.Blue)
+            {
+                m_BlueAgentGroup.AddGroupReward(AUTOGOAL_PENALTY_GROUP); // Penalize Blue team for autogoal
+                lastAgentToTouch.AddReward(AgentSoccer.AUTOGOAL_PENALTY_AGENT); // Penalize the specific agent
+                Debug.Log("Autogoal by Blue Player: " + lastAgentToTouch.name);
+                // Purple still gets standard goal reward
+                m_PurpleAgentGroup.AddGroupReward(1 - (float)m_ResetTimer / MaxEnvironmentSteps);
+            }
+            else
+            {
+                m_PurpleAgentGroup.AddGroupReward(1 - (float)m_ResetTimer / MaxEnvironmentSteps);
+                m_BlueAgentGroup.AddGroupReward(-1); // Standard penalty for conceded goal
+            }
         }
         m_PurpleAgentGroup.EndGroupEpisode();
         m_BlueAgentGroup.EndGroupEpisode();
@@ -121,6 +164,13 @@ public class SoccerEnvController : MonoBehaviour
         //Reset Agents
         foreach (var item in AgentsList)
         {
+            // Check for null references
+            if (item == null || item.Agent == null || item.Rb == null)
+            {
+                Debug.LogWarning("SoccerEnvController: Found null agent or rigidbody in AgentsList during ResetScene.");
+                continue;
+            }
+
             var randomPosX = Random.Range(-5f, 5f);
             var newStartPos = item.Agent.initialPos + new Vector3(randomPosX, 0f, 0f);
             var rot = item.Agent.rotSign * Random.Range(80.0f, 100.0f);

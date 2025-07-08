@@ -10,11 +10,36 @@ public class SoccerBallController : MonoBehaviour
 
     void Start()
     {
+        if (area == null)
+        {
+            Debug.LogError("SoccerBallController: area GameObject is not assigned in the inspector.");
+            return;
+        }
+
         envController = area.GetComponent<SoccerEnvController>();
+        if (envController == null)
+        {
+            Debug.LogError("SoccerBallController: area GameObject does not have a SoccerEnvController component.");
+        }
     }
 
     void OnCollisionEnter(Collision col)
     {
+        // Ensure envController is properly initialized
+        if (envController == null)
+        {
+            if (area != null)
+            {
+                envController = area.GetComponent<SoccerEnvController>();
+            }
+            
+            if (envController == null)
+            {
+                Debug.LogWarning("SoccerBallController: envController is null. Make sure the area GameObject has a SoccerEnvController component.");
+                return;
+            }
+        }
+
         if (col.gameObject.CompareTag(purpleGoalTag)) //ball touched purple goal
         {
             envController.GoalTouched(Team.Blue);
